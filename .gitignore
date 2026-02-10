@@ -4,6 +4,7 @@ frontend/dist
 
 # Python
 backend/.venv
+backend/eye_env
 backend/__pycache__/
 backend/*.pyc
 
