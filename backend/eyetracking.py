@@ -50,6 +50,11 @@ def get_eye_coords(landmarks):
     ry = (iris.y - top.y) / (bot.y - top.y)
     return rx, ry
 
+win = '5-Point Gaze Tracker'
+cv2.namedWindow(win, cv2.WINDOW_NORMAL)
+cv2.setWindowProperty(win, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+
 while cap.isOpened():
     success, frame = cap.read()
     if not success: break
@@ -113,7 +118,8 @@ while cap.isOpened():
             cv2.drawMarker(frame, (tx, ty), (0, 0, 255), cv2.MARKER_CROSS, 40, 2)
             cv2.circle(frame, (tx, ty), 12, (0, 255, 0), 2)
 
-    cv2.imshow('5-Point Gaze Tracker', frame)
+    cv2.imshow(win, frame)
+
     if cv2.waitKey(1) & 0xFF == 27: break
     if cv2.waitKey(1) & 0xFF == ord('r'): 
         is_calibrated = False
