@@ -20,7 +20,7 @@ export function useGaze() {
     ws.onmessage = (evt) => {
       try {
         const data = JSON.parse(evt.data);
-        console.log(data)
+        // console.log(data)
         if (typeof data?.x === "number" && typeof data?.y === "number") {
           setGaze(data);
         }

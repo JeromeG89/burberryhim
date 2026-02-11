@@ -6,7 +6,10 @@ const STEPS = [
   { name: "TOP-RIGHT", pos: { right: 30, top: 30 } },
   { name: "BOTTOM-LEFT", pos: { left: 30, bottom: 30 } },
   { name: "BOTTOM-RIGHT", pos: { right: 30, bottom: 30 } },
-  { name: "CENTER", pos: { left: "50%", top: "50%", transform: "translate(-50%, -50%)" } },
+  {
+    name: "CENTER",
+    pos: { left: "50%", top: "50%", transform: "translate(-50%, -50%)" },
+  },
 ];
 
 export default function CalibrateOverlay() {
@@ -48,7 +51,14 @@ export default function CalibrateOverlay() {
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0 }}>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000005, // ✅ ALWAYS above your white idle screen
+        pointerEvents: "none",
+      }}
+    >
       <div
         style={{
           position: "absolute",
@@ -59,7 +69,7 @@ export default function CalibrateOverlay() {
           background: "rgba(0,0,0,0.65)",
           color: "white",
           width: 320,
-          pointerEvents: "auto",
+          pointerEvents: "auto", // ✅ only this panel is clickable
         }}
       >
         <div style={{ fontWeight: 700, marginBottom: 6 }}>Calibration</div>
@@ -104,6 +114,7 @@ export default function CalibrateOverlay() {
             borderRadius: 9999,
             background: "orange",
             boxShadow: "0 0 18px rgba(255,165,0,0.7)",
+            pointerEvents: "none",
             ...current.pos,
           }}
         />

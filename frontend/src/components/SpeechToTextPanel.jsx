@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSpeechToText } from "../hooks/useSpeechToText";
+import GazeQuestionsGrid from "./GazeQuestionsGrid"; // NEW
 
 export default function SpeechToTextPanel() {
   const [questions, setQuestions] = useState([]);
@@ -16,19 +17,15 @@ export default function SpeechToTextPanel() {
     reset,
   } = useSpeechToText({ lang: "en-SG" });
 
-  // --- NEW: AI FETCH LOGIC ---
   const fetchQuestions = async (text) => {
     if (!text) return;
     setLoading(true);
     try {
-      const response = await fetch(
-        "http://localhost:8000/get-educational-questions",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: text }),
-        }
-      );
+      const response = await fetch("http://localhost:8000/get-educational-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: text }),
+      });
       const data = await response.json();
       setQuestions(data.questions || []);
     } catch (err) {
@@ -39,11 +36,10 @@ export default function SpeechToTextPanel() {
   };
 
   useEffect(() => {
-    // Only trigger when you STOP speaking and have a valid final result
     if (!isListening && finalTranscript) {
       fetchQuestions(finalTranscript);
     }
-  }, [isListening, finalTranscript]); // Use finalTranscript as the dependency
+  }, [isListening, finalTranscript]);
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -54,7 +50,7 @@ export default function SpeechToTextPanel() {
       }
       if (e.code === "Escape") {
         reset();
-        setQuestions([]); // Clear questions on reset
+        setQuestions([]);
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -65,23 +61,18 @@ export default function SpeechToTextPanel() {
 
   return (
     <>
-      {/* 1. NEW: THE 6 QUESTIONS GRID (Center of Screen) */}
-      {questions.length > 0 && (
-        <div style={styles.gridOverlay}>
-          {questions.map((q, idx) => (
-            <div key={idx} style={styles.gazeButton} className="gaze-target">
-              {q}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* NEW: questions grid + gaze selection + explanation fetch */}
+      <GazeQuestionsGrid
+        questions={questions}
+        prompt={finalTranscript}
+        onClear={() => setQuestions([])}
+      />
 
-      {/* 2. THE EXISTING SPEECH PANEL */}
+
+      {/* Existing speech panel */}
       <div style={styles.wrap}>
         <div style={styles.header}>
-          <div style={{ fontWeight: 700 }}>
-            Speech {loading && "• Generating..."}
-          </div>
+          <div style={{ fontWeight: 700 }}>Speech {loading && "• Generating..."}</div>
           <div style={styles.status}>{isListening ? "Listening…" : "Idle"}</div>
         </div>
 
@@ -94,11 +85,7 @@ export default function SpeechToTextPanel() {
         )}
 
         <div style={styles.box}>
-          {transcript ? (
-            transcript
-          ) : (
-            <span style={{ opacity: 0.6 }}>Say something…</span>
-          )}
+          {transcript ? transcript : <span style={{ opacity: 0.6 }}>Say something…</span>}
         </div>
 
         <div style={styles.hint}>Space = start/stop • Esc = clear</div>
@@ -107,35 +94,8 @@ export default function SpeechToTextPanel() {
   );
 }
 
+// keep your styles exactly as before
 const styles = {
-  // NEW STYLES FOR THE GAZE BUTTONS
-  gridOverlay: {
-    position: "fixed",
-    top: "10%",
-    left: "10%",
-    width: "80%",
-    height: "60%",
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)", // 3 columns
-    gridTemplateRows: "repeat(2, 1fr)", // 2 rows
-    gap: "20px",
-    zIndex: 999998,
-  },
-  gazeButton: {
-    background: "rgba(255, 255, 255, 0.15)",
-    border: "2px solid rgba(255, 255, 255, 0.3)",
-    borderRadius: "16px",
-    color: "black",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "20px",
-    textAlign: "center",
-    fontSize: "18px",
-    backdropFilter: "blur(10px)",
-    transition: "all 0.2s ease",
-  },
-  // YOUR EXISTING STYLES
   wrap: {
     position: "fixed",
     left: 16,
