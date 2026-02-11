@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { captureCalibration, resetCalibration } from "../api/gazeApi";
 
 const STEPS = [
@@ -6,7 +6,10 @@ const STEPS = [
   { name: "TOP-RIGHT", pos: { right: 30, top: 30 } },
   { name: "BOTTOM-LEFT", pos: { left: 30, bottom: 30 } },
   { name: "BOTTOM-RIGHT", pos: { right: 30, bottom: 30 } },
-  { name: "CENTER", pos: { left: "50%", top: "50%", transform: "translate(-50%, -50%)" } },
+  {
+    name: "CENTER",
+    pos: { left: "50%", top: "50%", transform: "translate(-50%, -50%)" },
+  },
 ];
 
 export default function CalibrateOverlay() {
@@ -16,6 +19,23 @@ export default function CalibrateOverlay() {
 
   const done = step >= STEPS.length;
   const current = useMemo(() => (done ? null : STEPS[step]), [step, done]);
+
+  // --- NEW: LISTEN FOR BLINK CAPTURE EVENTS ---
+  useEffect(() => {
+    const handleBlinkCapture = () => {
+      // Advance the step when a blink-triggered capture is successful
+      setStep((s) => (s < STEPS.length ? s + 1 : s));
+    };
+
+    window.addEventListener("calibration-point-captured", handleBlinkCapture);
+
+    return () => {
+      window.removeEventListener(
+        "calibration-point-captured",
+        handleBlinkCapture
+      );
+    };
+  }, []);
 
   async function onReset() {
     setErr("");
@@ -34,7 +54,7 @@ export default function CalibrateOverlay() {
     setErr("");
     setBusy(true);
     try {
-      const data = await captureCalibration(); // { ok: true/false }
+      const data = await captureCalibration(); // Calls http://127.0.0.1:8000/gaze/calibrate/capture
       if (!data.ok) {
         setErr("No face detected. Try again.");
         return;
@@ -60,6 +80,7 @@ export default function CalibrateOverlay() {
           color: "white",
           width: 320,
           pointerEvents: "auto",
+          zIndex: 1000,
         }}
       >
         <div style={{ fontWeight: 700, marginBottom: 6 }}>Calibration</div>
@@ -81,7 +102,7 @@ export default function CalibrateOverlay() {
 
             {err && <div style={{ marginTop: 8, color: "#ff8080" }}>{err}</div>}
             <div style={{ marginTop: 8, fontSize: 12, opacity: 0.85 }}>
-              Tip: keep your head still; move only your eyes.
+              Tip: Double-blink to capture point hands-free.
             </div>
           </>
         ) : (
@@ -99,11 +120,12 @@ export default function CalibrateOverlay() {
         <div
           style={{
             position: "absolute",
-            width: 26,
-            height: 26,
+            width: 30,
+            height: 30,
             borderRadius: 9999,
             background: "orange",
-            boxShadow: "0 0 18px rgba(255,165,0,0.7)",
+            border: "4px solid white",
+            boxShadow: "0 0 25px rgba(255,165,0,0.8)",
             ...current.pos,
           }}
         />

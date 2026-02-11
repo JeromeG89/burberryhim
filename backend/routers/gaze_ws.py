@@ -31,9 +31,15 @@ def calibrate_reset():
 
 @router.post("/calibrate/capture")
 def calibrate_capture():
-    """
-    Call this 5 times from the frontend:
-    TL, TR, BL, BR, CENTER (in that order)
-    """
     ok = capture_calibration_point()
-    return {"ok": ok}
+    # Return the current number of corners so the UI can advance
+    from services.gaze_tracker import corners
+    return {"ok": ok, "count": len(corners)}
+
+@router.websocket("/ws")
+async def gaze_ws(websocket: WebSocket):
+    # ...
+    payload = get_latest_gaze_snapshot()
+    # Print this to your terminal to see if x/y are changing
+    print(f"Gaze Status: Calibrated={payload['calibrated']}, X={payload['x']}, Y={payload['y']}")
+    await websocket.send_json(payload)

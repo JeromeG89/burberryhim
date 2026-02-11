@@ -5,6 +5,7 @@ export function useGaze() {
     x: 0.5,
     y: 0.5,
     calibrated: false,
+    blink: false, // Added blink property to the initial state
     ts_ms: 0,
   });
 
@@ -20,7 +21,8 @@ export function useGaze() {
     ws.onmessage = (evt) => {
       try {
         const data = JSON.parse(evt.data);
-        console.log(data)
+
+        // Ensure we capture all properties sent from the backend (x, y, blink, calibrated)
         if (typeof data?.x === "number" && typeof data?.y === "number") {
           setGaze(data);
         }
