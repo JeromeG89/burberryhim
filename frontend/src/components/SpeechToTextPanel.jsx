@@ -21,7 +21,7 @@ export default function SpeechToTextPanel() {
     if (!text) return;
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/get-educational-questions", {
+      const response = await fetch("https://burberryhim.onrender.com/get-educational-questions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: text }),

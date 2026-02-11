@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useGaze } from "../hooks/useGaze";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "https://burberryhim.onrender.com";
 
 // layout (5 tiles total = 2 rows x 3 cols, last tile reserved for BACK)
 const GRID_COLS = 3;

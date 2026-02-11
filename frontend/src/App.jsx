@@ -4,7 +4,7 @@ import GazeDot from "./components/GazeDot";
 import GazeQuestionsGrid from "./components/GazeQuestionsGrid";
 import { useSpeechToText } from "./hooks/useSpeechToText";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "https://burberryhim.onrender.com";
 
 export default function App() {
   const [questions, setQuestions] = useState([]);

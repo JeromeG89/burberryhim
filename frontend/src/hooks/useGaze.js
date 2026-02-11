@@ -15,7 +15,7 @@ export function useGaze() {
     // Guard: don't create multiple sockets
     if (wsRef.current) return;
 
-    const ws = new WebSocket("ws://localhost:8000/gaze/ws");
+    const ws = new WebSocket("ws://burberryhim.onrender.com/gaze/ws");
     wsRef.current = ws;
 
     ws.onmessage = (evt) => {
