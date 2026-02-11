@@ -453,7 +453,7 @@ export default function GazeQuestionsGrid({
       />
 
       {/* DEBUG HUD (REMOVE LATER) */}
-      <div style={styles.debugHud}>
+      {/* <div style={styles.debugHud}>
         mode:{mode} cal:{String(calibrated)} rec:{String(isRecording)} transcribing:
         {String(isTranscribing)}
         <br />
@@ -464,7 +464,7 @@ export default function GazeQuestionsGrid({
         promptLen:{String((prompt ?? "").length)} qCount:{q5.length}
         <br />
         loadingExp:{String(loadingExplanation)} loadingFU:{String(loadingFollowups)}
-      </div>
+      </div> */}
 
       {/* IDLE WHITE PAGE */}
       {mode === "idle" && (
