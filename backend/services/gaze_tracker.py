@@ -87,32 +87,27 @@ def reset_calibration():
     smooth_x, smooth_y = 0.5, 0.5
     with gaze_lock:
         latest_gaze["calibrated"] = False
+        latest_gaze["x"] = 0.5
+        latest_gaze["y"] = 0.5
+    print("Calibration has been fully reset via long blink.")
 
 def capture_calibration_point():
     global corners, is_calibrated
-    
-    # 1. Log attempt
-    print(f"Capture requested. Current corners: {len(corners)}")
-
     if latest_result and latest_result.face_landmarks:
         landmarks = latest_result.face_landmarks[0]
         curr_rx, curr_ry = get_eye_coords(landmarks)
         
-        # 2. Add point if we have room
         if len(corners) < 5:
             corners.append([curr_rx, curr_ry])
-            print(f"Point {len(corners)} saved: {curr_rx:.4f}, {curr_ry:.4f}")
+            print(f"Point {len(corners)} captured")
         
-        # 3. If we just hit 5, ACTIVATE TRACKING
-        if len(corners) >= 5:
+        # FIX: Only set this at EXACTLY 5
+        if len(corners) == 5:
             is_calibrated = True
             with gaze_lock:
-                latest_gaze["calibrated"] = True
-            print("--- CALIBRATION SUCCESSFUL ---")
-            
+                latest_gaze["calibrated"] = True # Only now does the frontend stop listening
+            print("--- FULLY CALIBRATED ---")
         return True
-    
-    print("Capture Failed: No face detected in frame.")
     return False
 
 def gaze_loop():
@@ -140,7 +135,7 @@ def gaze_loop():
                 # Detect blink every frame
                 blinking = check_blink(landmarks)
 
-                if is_calibrated and len(corners) >= 5:
+                if is_calibrated and len(corners) == 5:
                     curr_rx, curr_ry = get_eye_coords(landmarks)
                     norm_x, norm_y = map_to_screen(curr_rx, curr_ry)
                     smooth_x = (smooth_x * 0.9) + (norm_x * 0.1)
@@ -156,6 +151,7 @@ def gaze_loop():
                     # Update blink even if not calibrated
                     with gaze_lock:
                         latest_gaze["blink"] = blinking
+                        latest_gaze["calibrated"] = False
     finally:
         detector.close()
         cap.release()

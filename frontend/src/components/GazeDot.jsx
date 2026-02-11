@@ -1,29 +1,78 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useGaze } from "../hooks/useGaze";
-import { captureCalibration } from "../api/gazeApi";
+import { captureCalibration, resetCalibration } from "../api/gazeApi";
 
 export default function GazeDot() {
   const { x, y, calibrated, blink } = useGaze();
   const lastBlinkTime = useRef(0);
+  const blinkStartRef = useRef(null); // Track when current blink started
+
   const [isDoubleBlinking, setIsDoubleBlinking] = useState(false);
   const [countdown, setCountdown] = useState(null);
+  const [isHoldingReset, setIsHoldingReset] = useState(false);
 
   useEffect(() => {
-    // Only detect blinks for calibration if NOT already calibrated
-    if (blink && !calibrated) {
-      const currentTime = Date.now();
-      const timeDiff = currentTime - lastBlinkTime.current;
+    let holdInterval = null;
 
-      // Logic: Second blink must be 50ms to 600ms after the first
-      if (timeDiff > 50 && timeDiff < 600) {
-        if (countdown === null) {
-          console.log("Double-blink detected! Starting countdown...");
-          triggerCountdown();
-        }
+    if (blink) {
+      // 1. Record the start time of the blink
+      if (!blinkStartRef.current) {
+        blinkStartRef.current = Date.now();
       }
-      lastBlinkTime.current = currentTime;
+
+      // 2. Monitor for the Long Blink Reset while eyes are closed
+      holdInterval = setInterval(() => {
+        if (blinkStartRef.current) {
+          const holdDuration = Date.now() - blinkStartRef.current;
+          if (holdDuration > 2000) {
+            handleLongBlinkReset();
+            clearInterval(holdInterval);
+            blinkStartRef.current = null;
+          } else if (holdDuration > 1000) {
+            setIsHoldingReset(true);
+          }
+        }
+      }, 100);
+    } else {
+      // 3. Eyes JUST opened - check if this was a pulse for calibration
+      if (blinkStartRef.current) {
+        const duration = Date.now() - blinkStartRef.current;
+        setIsHoldingReset(false);
+
+        // IMPORTANT: If the eye was closed for less than 800ms, treat it as a potential double-blink
+        if (duration < 800 && !calibrated) {
+          const currentTime = Date.now();
+          const timeDiff = currentTime - lastBlinkTime.current;
+
+          // Check if this is the second pulse in the sequence
+          if (timeDiff > 50 && timeDiff < 700) {
+            if (countdown === null) {
+              console.log("Valid Double-Blink detected for capture");
+              triggerCountdown();
+            }
+          }
+          lastBlinkTime.current = currentTime;
+        }
+        blinkStartRef.current = null;
+      }
+      if (holdInterval) clearInterval(holdInterval);
     }
+
+    return () => {
+      if (holdInterval) clearInterval(holdInterval);
+    };
   }, [blink, calibrated, countdown]);
+
+  const handleLongBlinkReset = async () => {
+    try {
+      console.log("Long blink detected! Resetting calibration...");
+      await resetCalibration();
+      // Reload the page to ensure all component states (steps, etc.) are fresh
+      window.location.reload();
+    } catch (err) {
+      console.error("Reset failed:", err);
+    }
+  };
 
   const triggerCountdown = () => {
     setIsDoubleBlinking(true);
@@ -45,17 +94,12 @@ export default function GazeDot() {
   const performCapture = async () => {
     try {
       const data = await captureCalibration();
-      console.log("Capture response:", data);
       if (data.ok) {
-        // This tells CalibrateOverlay to move to the next dot
         window.dispatchEvent(new CustomEvent("calibration-point-captured"));
-      } else {
-        console.warn("Capture failed: Backend couldn't see face.");
       }
     } catch (err) {
       console.error("Capture API error:", err);
     } finally {
-      // RESET everything so the next dot can be captured
       setCountdown(null);
       setIsDoubleBlinking(false);
     }
@@ -79,14 +123,19 @@ export default function GazeDot() {
           width: countdown ? 45 : 16,
           height: countdown ? 45 : 16,
           borderRadius: 9999,
-          background: countdown
+          // Background color transitions to white when holding for a reset
+          background: isHoldingReset
+            ? "#ffffff"
+            : countdown
             ? "#FFD700"
             : blink
             ? "#ff3333"
             : calibrated
             ? "#00ff66"
             : "#777",
-          boxShadow: countdown
+          boxShadow: isHoldingReset
+            ? "0 0 30px #ffffff"
+            : countdown
             ? "0 0 30px #FFD700"
             : blink
             ? "0 0 20px rgba(255, 51, 51, 0.6)"
@@ -102,6 +151,10 @@ export default function GazeDot() {
       >
         {countdown && typeof countdown === "number" ? countdown : ""}
       </div>
+
+      {isHoldingReset && (
+        <div style={styles.resetText}>KEEP HOLDING TO RESET...</div>
+      )}
 
       {countdown && (
         <div style={styles.statusText}>
@@ -124,5 +177,15 @@ const styles = {
     fontSize: "24px",
     fontWeight: "bold",
     textShadow: "2px 2px 8px rgba(0,0,0,0.8)",
+  },
+  resetText: {
+    position: "absolute",
+    left: "50%",
+    top: "40%",
+    transform: "translateX(-50%)",
+    color: "#ffffff",
+    fontSize: "20px",
+    fontWeight: "bold",
+    textShadow: "0 0 10px rgba(0,0,0,0.5)",
   },
 };

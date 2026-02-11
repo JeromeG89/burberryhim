@@ -37,6 +37,21 @@ export default function CalibrateOverlay() {
     };
   }, []);
 
+  useEffect(() => {
+    // Reset backend calibration state on page refresh/mount
+    const initReset = async () => {
+      try {
+        await resetCalibration(); // Uses your existing gazeApi function
+        setStep(0);
+        console.log("Calibration state reset on refresh");
+      } catch (e) {
+        console.error("Failed to reset on refresh:", e);
+      }
+    };
+
+    initReset();
+  }, []); // Empty dependency array means this runs once on load
+
   async function onReset() {
     setErr("");
     setBusy(true);
