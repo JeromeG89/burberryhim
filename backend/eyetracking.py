@@ -32,10 +32,9 @@ detector = FaceLandmarker.create_from_options(options)
 cap = cv2.VideoCapture(0)
 
 # --- CALIBRATION STATE ---
-# We store the [rel_x, rel_y] of the iris at 4 corners
-# 0: Top-Left, 1: Top-Right, 2: Bottom-Left, 3: Bottom-Right
+# Points: 0:TL, 1:TR, 2:BL, 3:BR, 4:CENTER
 corners = [] 
-corner_labels = ["TOP-LEFT", "TOP-RIGHT", "BOTTOM-LEFT", "BOTTOM-RIGHT"]
+corner_labels = ["TOP-LEFT", "TOP-RIGHT", "BOTTOM-LEFT", "BOTTOM-RIGHT", "CENTER"]
 is_calibrated = False
 smooth_x, smooth_y = 0.5, 0.5
 
@@ -65,50 +64,56 @@ while cap.isOpened():
         curr_rx, curr_ry = get_eye_coords(landmarks)
 
         if not is_calibrated:
-            # 1. STEP-BY-STEP CALIBRATION
+            # 1. 5-POINT CALIBRATION SEQUENCE
             idx = len(corners)
             cv2.putText(frame, f"STARE AT {corner_labels[idx]} AND PRESS 'C'", 
-                        (w//4, h//2), 1, 1.5, (0, 255, 255), 2)
+                        (w//6, h//2), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
             
-            # Draw a hint dot at the corner we want
-            hint_points = [(50, 50), (w-50, 50), (50, h-50), (w-50, h-50)]
+            # Calibration point hints
+            hint_points = [(50, 50), (w-50, 50), (50, h-50), (w-50, h-50), (w//2, h//2)]
             cv2.circle(frame, hint_points[idx], 20, (0, 165, 255), -1)
 
             if cv2.waitKey(1) & 0xFF == ord('c'):
                 corners.append([curr_rx, curr_ry])
-                if len(corners) == 4:
+                if len(corners) == 5:
                     is_calibrated = True
-                    # Set initial smoothing to center
                     smooth_x, smooth_y = 0.5, 0.5
         else:
-            # 2. BILINEAR INTERPOLATION (The Accuracy Fix)
-            # Map current iris [rx, ry] to [0.0 - 1.0] based on the 4 corners
-            tl, tr, bl, br = corners
+            # 2. PIECEWISE LINEAR INTERPOLATION (The Accuracy Fix)
+            # tl=0, tr=1, bl=2, br=3, mid=4
+            tl, tr, bl, br, mid = corners
             
-            # Simple Bilinear approximation
-            # Map X based on top and bottom corner widths
-            top_x = np.interp(curr_rx, [tl[0], tr[0]], [0, 1])
-            bot_x = np.interp(curr_rx, [bl[0], br[0]], [0, 1])
-            norm_x = (top_x + bot_x) / 2
+            # --- Map X (Split at calibrated Center) ---
+            if curr_rx < mid[0]:
+                # Left half of screen: map from left bounds to center
+                left_bound = (tl[0] + bl[0]) / 2
+                norm_x = np.interp(curr_rx, [left_bound, mid[0]], [0, 0.5])
+            else:
+                # Right half of screen: map from center to right bounds
+                right_bound = (tr[0] + br[0]) / 2
+                norm_x = np.interp(curr_rx, [mid[0], right_bound], [0.5, 1])
             
-            # Map Y based on left and right corner heights
-            left_y = np.interp(curr_ry, [tl[1], bl[1]], [0, 1])
-            right_y = np.interp(curr_ry, [tr[1], br[1]], [0, 1])
-            norm_y = (left_y + right_y) / 2
+            # --- Map Y (Split at calibrated Center) ---
+            if curr_ry < mid[1]:
+                # Top half: map from top bounds to center
+                top_bound = (tl[1] + tr[1]) / 2
+                norm_y = np.interp(curr_ry, [top_bound, mid[1]], [0, 0.5])
+            else:
+                # Bottom half: map from center to bottom bounds
+                bot_bound = (bl[1] + br[1]) / 2
+                norm_y = np.interp(curr_ry, [mid[1], bot_bound], [0.5, 1])
 
-            # 3. VERTICAL BOOST & SMOOTHING
-            # Boost vertical sensitivity even further
-            norm_y = np.clip((norm_y - 0.5) * 1.4 + 0.5, 0, 1)
-            
+            # 3. SMOOTHING
+            # X is usually stable; Y needs faster response to feel accurate
             smooth_x = (smooth_x * 0.9) + (norm_x * 0.1)
-            smooth_y = (smooth_y * 0.85) + (norm_y * 0.15)
+            smooth_y = (smooth_y * 0.82) + (norm_y * 0.18) 
 
             # 4. DRAW
-            tx, ty = int(smooth_x * w), int(smooth_y * h)
+            tx, ty = int(np.clip(smooth_x, 0, 1) * w), int(np.clip(smooth_y, 0, 1) * h)
             cv2.drawMarker(frame, (tx, ty), (0, 0, 255), cv2.MARKER_CROSS, 40, 2)
             cv2.circle(frame, (tx, ty), 12, (0, 255, 0), 2)
 
-    cv2.imshow('Corner Calibrated Tracker', frame)
+    cv2.imshow('5-Point Gaze Tracker', frame)
     if cv2.waitKey(1) & 0xFF == 27: break
     if cv2.waitKey(1) & 0xFF == ord('r'): 
         is_calibrated = False
