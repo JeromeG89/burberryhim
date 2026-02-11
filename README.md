@@ -77,7 +77,7 @@ npm run dev
 ```
 By default, it will run at http://localhost:5173
 
-🧩 BACKEND SETUP (Python + FastAPI)
+# 🧩 BACKEND SETUP (Python + FastAPI)
 
 ## 1️⃣ Navigate to backend directory
 
