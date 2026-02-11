@@ -12,10 +12,10 @@ Instead of forcing students to adapt to technology, A-eyes adapts technology to 
 
 # 🚀 Key Features
 
+- 👁 **Eye-tracking** question selection (hands-free interaction!)
 - 🎙 Real-time lecture transcription (speech-to-text)
 - 🧠 AI contextual understanding of lecture content
 - 💡 AI-generated recommended questions (clarification + reinforcement)
-- 👁 Eye-tracking question selection (hands-free interaction)
 - 🔊 Text-to-speech output
 - 🌐 Web-based, scalable platform
 - 💸 Works with standard webcams (no expensive proprietary hardware required)
