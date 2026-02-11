@@ -62,3 +62,48 @@ This project contains:
 ```bash
 cd frontend
 ```
+
+
+## 2️⃣ Install dependencies
+
+```bash
+npm i
+```
+
+## 3️⃣ Start the local server
+
+```bash
+npm run dev
+```
+By default, it will run at http://localhost:5173
+
+## 1️⃣ Navigate to backend directory
+
+```bash
+cd backend
+```
+
+## 2️⃣ Create and install dependencies
+
+```bash
+virtualenv .venv
+.venv\Scripts\activate
+```
+
+## 3️⃣ Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+## 4️⃣ Create a .env file with:   
+```bash
+OPENAI_API_KEY="<openai_key>"
+```
+
+## 5️⃣ Run the FastAPI server
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+
